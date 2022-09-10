@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.2.32630.192
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NatPortOpener", "NatPortOpener.csproj", "{369F162C-B2F9-4DE6-BD04-65BB64DA7B92}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{369F162C-B2F9-4DE6-BD04-65BB64DA7B92}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{369F162C-B2F9-4DE6-BD04-65BB64DA7B92}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{369F162C-B2F9-4DE6-BD04-65BB64DA7B92}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{369F162C-B2F9-4DE6-BD04-65BB64DA7B92}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {9C8DE522-635E-4CD5-A3F5-1A65F732F9D3}
+	EndGlobalSection
+EndGlobal
