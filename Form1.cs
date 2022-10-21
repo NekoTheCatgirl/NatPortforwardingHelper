@@ -1,18 +1,99 @@
+using System.Linq;
+using System.Diagnostics;
+using System.Text.RegularExpressions;
 using Open.Nat;
 
 namespace NatPortOpener
 {
     public partial class Form1 : Form
     {
-
         public Form1()
         {
             InitializeComponent();
+#if DEBUG
+            NatDiscoverer.TraceSource.Switch.Level = SourceLevels.Verbose;
+#else
+            NatDiscoverer.TraceSource.Switch.Level = SourceLevels.Information;
+#endif
+            NatDiscoverer.TraceSource.Listeners.Add(new EventLogListener(AddNewEventToLog));
+
+            FormClosing += Form1_FormClosing;
+        }
+
+        private void Form1_FormClosing(object? sender, FormClosingEventArgs e)
+        {
+            NatDiscoverer.ReleaseAll();
+        }
+
+        class EventLogListener : TraceListener
+        {
+            readonly Action<string> writeCallback;
+
+            public EventLogListener(Action<string> callback)
+            {
+                writeCallback = callback;
+            }
+
+            public override void Write(string? message)
+            {
+                if (message == null) return;
+                writeCallback(message);
+            }
+
+            public override void WriteLine(string? message)
+            {
+                if (message == null) return;
+                writeCallback(message);
+            }
         }
 
         private void AddNewEventToLog(string EventMessage)
         {
-            EventHistory.Items.Add(EventMessage);
+            if (EventMessage.Length < 1) return;
+
+            if (EventHistory.InvokeRequired)
+            {
+                EventHistory.Invoke(delegate { AddNewEventToLog(EventMessage); });
+            }
+            else
+            {
+                string[] lines = SplitToLines(EventMessage, 100).ToArray();
+
+                foreach (var line in lines)
+                {
+                    EventHistory.Items.Add(line);
+                }
+            }
+        }
+
+        IEnumerable<string> SplitToLines(string stringToSplit, int maximumLineLength)
+        {
+            var words = stringToSplit.Split(' ').Concat(new[] { "" });
+            return
+                words
+                    .Skip(1)
+                    .Aggregate(
+                        words.Take(1).ToList(),
+                        (a, w) =>
+                        {
+                            var last = a.Last();
+                            while (last.Length > maximumLineLength)
+                            {
+                                a[a.Count() - 1] = last.Substring(0, maximumLineLength);
+                                last = last.Substring(maximumLineLength);
+                                a.Add(last);
+                            }
+                            var test = last + " " + w;
+                            if (test.Length > maximumLineLength)
+                            {
+                                a.Add(w);
+                            }
+                            else
+                            {
+                                a[a.Count() - 1] = test;
+                            }
+                            return a;
+                        });
         }
 
         private void OpenPort_Click(object sender, EventArgs e)
@@ -39,7 +120,6 @@ namespace NatPortOpener
             try
             {
                 bool isTcp = TcpSelected.Checked;
-                bool isUdp = UdpSelected.Checked;
 
                 Task.Run(async () =>
                 {
@@ -47,18 +127,26 @@ namespace NatPortOpener
 
                     var cts = new CancellationTokenSource(5000);
                     var device = await nat.DiscoverDeviceAsync(PortMapper.Upnp, cts);
+                    Mapping mapping;
 
                     if (isTcp)
                     {
-                        await device.CreatePortMapAsync(new Mapping(Protocol.Tcp, PrivatePort, PublicPort));
+                        mapping = new Mapping(Protocol.Tcp, PrivatePort, PublicPort, int.MaxValue, MappingName);
                     }
-                    else if (isUdp)
+                    else
                     {
-                        await device.CreatePortMapAsync(new Mapping(Protocol.Udp, PrivatePort, PublicPort));
+                        mapping = new Mapping(Protocol.Udp, PrivatePort, PublicPort, int.MaxValue, MappingName);
                     }
-                });
 
-                AddNewEventToLog("Opening port successful! Make sure to have external computers connect via the external router ip with the public port.");
+                    if (mapping != null)
+                    {
+                        await device.CreatePortMapAsync(mapping);
+                    }
+
+                    AddNewEventToLog("Opening port successful! Make sure to have external computers connect via the external router ip with the public port.");
+
+                    MessageBox.Show("Make sure to not close this application, as doing so will automatically close the port again.");
+                });
             }
             catch (NatDeviceNotFoundException)
             {
